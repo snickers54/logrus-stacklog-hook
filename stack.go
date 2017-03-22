@@ -88,5 +88,6 @@ func CreateStack() *Stack {
 		File:      file,
 		Line:      line,
 		Hostname:  host,
+		Extra:     map[string]interface{}{},
 	}
 }

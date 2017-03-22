@@ -33,30 +33,35 @@ type LogMessage struct {
 	File      string                 `json:"file"`
 }
 
+// factory to create stdRequests with common options to both stacks and logs
+func newStdRequest() *gorequest.SuperAgent {
+	return gorequest.New().
+		Timeout(3*time.Second).
+		Retry(2, 1*time.Second, http.StatusInternalServerError, http.StatusBadGateway, http.StatusGatewayTimeout)
+}
+
 // Init pre constructed requests and launch a writerLoop goroutine to bufferise and send logs
 func start(stklogProjectKey string) {
 	if running == true {
 		fmt.Printf("You already have a running hook.\n")
 		return
 	}
-	stdRequest := gorequest.New().Set("Stklog-Project-Key", stklogProjectKey).
-		Set("Content-Type", "application/json").
-		Timeout(5*time.Second).
-		Retry(3, 1*time.Second, http.StatusInternalServerError, http.StatusBadGateway, http.StatusGatewayTimeout)
-	logsRequest := stdRequest.Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT))
-	stacksRequest := stdRequest.Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT))
+	stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+		Set("Content-Type", "application/json")
+	logsRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+		Set("Content-Type", "application/json")
 	go writerLoop(logsRequest, stacksRequest)
 	running = true
 }
 
 // Bufferise logs and stacks
-// Send requests every 15seconds and empty the buffer
+// Send requests every 5seconds and empty the buffer
 func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
 	buffer := struct {
 		Stacks []Stack
 		Logs   []LogMessage
 	}{}
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case toSend := <-chanBuffer:
@@ -69,10 +74,14 @@ func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
 				fmt.Printf("%+v is an invalid iMessage object.\n", value)
 			}
 		case <-ticker.C:
-			execRequest(stacksRequest, buffer.Stacks)
-			buffer.Stacks = []Stack{}
-			execRequest(logsRequest, buffer.Logs)
-			buffer.Logs = []LogMessage{}
+			if len(buffer.Stacks) > 0 {
+				execRequest(stacksRequest, buffer.Stacks)
+				buffer.Stacks = []Stack{}
+			}
+			if len(buffer.Logs) > 0 {
+				execRequest(logsRequest, buffer.Logs)
+				buffer.Logs = []LogMessage{}
+			}
 		}
 	}
 }
