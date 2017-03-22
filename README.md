@@ -21,6 +21,7 @@ import (
 
 func main() {
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     // instantiate a "stack" where your logs will be linked to
     stklog.CreateStack().End()
     log.AddHook(hook)
@@ -28,6 +29,7 @@ func main() {
 }
 ```
 
+***NB: hook.Flush is used to flush the buffer of logs/stacks before quitting, useful if you're not a daemon running forever or to quite properly.***
 ### Custom level of logging for Stklog.io
 
 You can define a level of logging for `Stklog.io` independently from `logrus` itself.
@@ -46,6 +48,7 @@ func main() {
     log.SetLevel(log.InfoLevel)
 
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     stklog.CreateStack().End()
     // stklog level = warn
     hook.SetLevel(log.WarnLevel)
@@ -54,7 +57,7 @@ func main() {
     log.Info("some logging message")
 }
 ```
-##Logs
+## Logs
 Logs written by Logrus, will be standardized to be accepted by `Stklog.io` API.
 Here are the current version of the struct used :
 
@@ -82,7 +85,7 @@ Here are the current version of the struct used :
 > Extra fields from logrus
 
 
-##Stacks
+## Stacks
 `Stklog.io` as a different way to deal with logs, instead of sending your logs all independently from each others, and then visualize a soup of mixed logs coming from different services, threads and scopes. They introduce a concept of stack, like you would imagine a stacktrace. Because your logs are actually events triggered in a logical order. A stack then, represent a block of logs ordered by time. Moreover, a stack can be attached to another one, to produce a sub stack, like a sub logical part of your current context. Really useful for microservices or threads/goroutines tracking ..
 
 ### End
@@ -116,6 +119,7 @@ func worker(stack *stklog.Stack) {
 
 func main() {
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     stack := stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
     log.Info("Starting main loop")
@@ -146,12 +150,13 @@ import (
 )
 
 func worker() {
-     stklog.CreateStack().SetName("worker").End()
+    stklog.CreateStack().SetName("worker").End()
     log.Info("logs inside worker, independently of main")
 }
 
 func main() {
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
     log.Info("Starting main loop")
@@ -177,6 +182,7 @@ func worker(stack *stklog.Stack) {
 
 func main() {
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
     log.Info("logs written to the 'main' stack")
@@ -216,6 +222,7 @@ import (
 
 func main() {
     hook := stklog.NewStklogHook("<project key>")
+    defer hook.Flush()
     stklog.CreateStack()
         .SetName("test stack")
         .SetRequestID("test1234")
@@ -228,7 +235,7 @@ func main() {
     log.Info("some logging message")
 }
 ```
-###Technical details
+### Technical details
 Specifically for Golang, we had to find a smart way to not ask you on which stack you want to write. We then decided to maintain an internal map[string]string, with key the current goroutine ID and with value the requestID of a stack. We invite you to check the code itself to understand our implementation.
 ### Miscellaneous
 You can call `stklog.GetCurrentRequestID()` to know which requestID is associated to your current thread. It could help for debugging purpose if you do tricky things :)

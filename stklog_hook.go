@@ -31,7 +31,7 @@ func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 	if ok == false {
 		return errors.New(STACK_NOT_FOUND)
 	}
-	file, line := getCaller()
+	file, line := getCaller(1)
 	logMessage := &LogMessage{
 		// logrus levels are lower than syslog by 2
 		Level:     int32(entry.Level) + 2,
@@ -89,6 +89,11 @@ func (hook *StklogHook) Levels() []logrus.Level {
 		return logrus.AllLevels
 	}
 	return hook.logLevels
+}
+
+// Flush allow you to send last things stuck in the before when you want to quit, since we use a ticker to send logs / stacks to the platform.
+func (hook *StklogHook) Flush() {
+	flusher <- true
 }
 
 // Custom method for user to define from which level he/she wants to logs to Stklog

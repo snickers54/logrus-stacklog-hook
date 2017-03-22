@@ -10,8 +10,15 @@ import (
 
 // Global package channel accepting iMessage interface
 // We accept either a log (LogMessage) or a "stack" (Stack)
+type msgBuffer struct {
+	Stacks []Stack
+	Logs   []LogMessage
+}
+
 var chanBuffer = make(chan iMessage)
+var flusher = make(chan bool)
 var running = false
+var buffer = msgBuffer{}
 
 const (
 	STKLOG_HOST            = "https://stklog.io"
@@ -57,10 +64,6 @@ func start(stklogProjectKey string) {
 // Bufferise logs and stacks
 // Send requests every 5seconds and empty the buffer
 func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
-	buffer := struct {
-		Stacks []Stack
-		Logs   []LogMessage
-	}{}
 	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
@@ -74,15 +77,24 @@ func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
 				fmt.Printf("%+v is an invalid iMessage object.\n", value)
 			}
 		case <-ticker.C:
-			if len(buffer.Stacks) > 0 {
-				execRequest(stacksRequest, buffer.Stacks)
-				buffer.Stacks = []Stack{}
-			}
-			if len(buffer.Logs) > 0 {
-				execRequest(logsRequest, buffer.Logs)
-				buffer.Logs = []LogMessage{}
-			}
+			send(logsRequest, stacksRequest)
+		case <-flusher:
+			send(logsRequest, stacksRequest)
+			// We don't close the channels, since if it writes into it before the program actually die/quit, it will panic ..
+			break
 		}
+	}
+}
+
+// execute requests to send stacks and logs to the API and reset the buffers after
+func send(logsRequest, stacksRequest *gorequest.SuperAgent) {
+	if len(buffer.Stacks) > 0 {
+		execRequest(stacksRequest, buffer.Stacks)
+		buffer.Stacks = []Stack{}
+	}
+	if len(buffer.Logs) > 0 {
+		execRequest(logsRequest, buffer.Logs)
+		buffer.Logs = []LogMessage{}
 	}
 }
 
