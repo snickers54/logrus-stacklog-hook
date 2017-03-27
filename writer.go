@@ -21,7 +21,7 @@ var running = false
 var buffer = msgBuffer{}
 
 const (
-	STKLOG_HOST            = "https://stklog.io"
+	STKLOG_HOST            = "https://api.stklog.io"
 	STKLOG_STACKS_ENDPOINT = "stacks"
 	STKLOG_LOGS_ENDPOINT   = "logs"
 )
