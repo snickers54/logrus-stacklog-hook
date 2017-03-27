@@ -48,9 +48,10 @@ func (self *Stack) SetName(name string) *Stack {
 }
 
 // End is sending this stack through a channel listened by writerLoop
-func (self *Stack) End() {
+func (self *Stack) End() *Stack {
 	self.pushed = true
 	chanBuffer <- iMessage(self)
+	return self
 }
 
 // Attach is used when you want to log inside a goroutine as part of the same context
