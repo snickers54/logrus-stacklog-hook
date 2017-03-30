@@ -107,7 +107,7 @@ func execRequest(request *gorequest.SuperAgent, array interface{}) {
 		fmt.Println("Stklog project key is invalid.")
 		return
 	}
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Couldn't send request to %s\n, errors : %s\n", STKLOG_HOST, errs)
 	}
 }
