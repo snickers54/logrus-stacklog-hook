@@ -65,6 +65,7 @@ func start(stklogProjectKey string) {
 // Send requests every 5seconds and empty the buffer
 func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
 	ticker := time.NewTicker(5 * time.Second)
+infiniteLoop:
 	for {
 		select {
 		case toSend := <-chanBuffer:
@@ -81,9 +82,10 @@ func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
 		case <-flusher:
 			send(logsRequest, stacksRequest)
 			// We don't close the channels, since if it writes into it before the program actually die/quit, it will panic ..
-			break
+			break infiniteLoop
 		}
 	}
+	flusher <- true
 }
 
 // execute requests to send stacks and logs to the API and reset the buffers after

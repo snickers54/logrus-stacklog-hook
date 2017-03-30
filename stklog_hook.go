@@ -94,6 +94,7 @@ func (hook *StklogHook) Levels() []logrus.Level {
 // Flush allow you to send last things stuck in the before when you want to quit, since we use a ticker to send logs / stacks to the platform.
 func (hook *StklogHook) Flush() {
 	flusher <- true
+	<-flusher
 }
 
 // Custom method for user to define from which level he/she wants to logs to Stklog
