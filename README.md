@@ -61,32 +61,43 @@ func main() {
 Logs written by Logrus, will be standardized to be accepted by `Stklog.io` API.
 Here are the current version of the struct used :
 
+```golang
+type LogMessage struct {
+	Level     int32                  `json:"level"`
+	Extra     map[string]interface{} `json:"extra"`
+	Message   string                 `json:"message"`
+	RequestID string                 `json:"request_id"`
+	Timestamp string                 `json:"timestamp"`
+	Line      int                    `json:"line"`
+	File      string                 `json:"file"`
+}
+```
 **Level**  
->`Debug`, `Info`, `Warning`, `Error`, `Fatal` and  `Panic`
+`Debug`, `Info`, `Warning`, `Error`, `Fatal` and  `Panic`. For a better insight in Stklog.io we advise to use at least `Info` levels with SetLevel() on your hook.
+ 
+**Timestamp**.  
+Using [RFC3339](https://golang.org/pkg/time/#pkg-constants)
 
-> For a better insight in Stklog.io we advise to use at least `Info` levels
+**File**.  
+ In which file the log call was performed
 
-**Timestamp**
-> Using [RFC3339](https://golang.org/pkg/time/#pkg-constants)
+**Line**.  
+ On which line of this file it was.
 
-**File**
-> In which file the log call was performed
+**RequestID**.  
+ Unique identifier letting us link this log to a `stack`
 
-**Line**
-> On which line of this file it was.
+**Message**.  
+ Well, the log itself
 
-**RequestID**
-> Unique identifier letting us link this log to a `stack`
-
-**Message**
-> Well, the log itself
-
-**Extra**
-> Extra fields from logrus
+**Extra**.  
+ Extra fields from logrus
 
 
 ## Stacks
-`Stklog.io` as a different way to deal with logs, instead of sending your logs all independently from each others, and then visualize a soup of mixed logs coming from different services, threads and scopes. They introduce a concept of stack, like you would imagine a stacktrace. Because your logs are actually events triggered in a logical order. A stack then, represent a block of logs ordered by time. Moreover, a stack can be attached to another one, to produce a sub stack, like a sub logical part of your current context. Really useful for microservices or threads/goroutines tracking ..
+`Stklog.io` as a different way to deal with logs, instead of sending your logs all independently from each others, and then visualize a soup of mixed logs coming from different services, threads and scopes. They introduce a concept of stack, like you would imagine a stacktrace. Because your logs are actually events triggered in a logical order.
+
+A stack then, represent a block of logs ordered by time. Moreover, a stack can be attached to another one, to produce a sub stack, like a sub logical part of your current context. Really useful for microservices or threads/goroutines tracking ..
 
 ### End
 You will need to call End() for the stack to be created on `Stklog.io`. Stacks and logs will be bufferised and sent over HTTPS to `Stklog.io` every 15 seconds asynchronously to avoid having any impact to your service.
