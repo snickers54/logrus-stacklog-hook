@@ -31,7 +31,7 @@ func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 	if ok == false {
 		return errors.New(STACK_NOT_FOUND)
 	}
-	file, line := getCaller(1)
+	file, line := getCallerIgnoringLogMulti(1)
 	logMessage := &LogMessage{
 		// logrus levels are lower than syslog by 2
 		Level:     int32(entry.Level) + 2,
