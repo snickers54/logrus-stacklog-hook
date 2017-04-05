@@ -53,17 +53,13 @@ func start(stklogProjectKey string) {
 		fmt.Printf("You already have a running hook.\n")
 		return
 	}
-	stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
-		Set("Content-Type", "application/json")
-	logsRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
-		Set("Content-Type", "application/json")
-	go writerLoop(logsRequest, stacksRequest)
+	go writerLoop(stklogProjectKey)
 	running = true
 }
 
 // Bufferise logs and stacks
 // Send requests every 5seconds and empty the buffer
-func writerLoop(logsRequest, stacksRequest *gorequest.SuperAgent) {
+func writerLoop(projectKey string) {
 	ticker := time.NewTicker(5 * time.Second)
 infiniteLoop:
 	for {
@@ -78,9 +74,9 @@ infiniteLoop:
 				fmt.Printf("%+v is an invalid iMessage object.\n", value)
 			}
 		case <-ticker.C:
-			send(logsRequest, stacksRequest)
+			send(projectKey)
 		case <-flusher:
-			send(logsRequest, stacksRequest)
+			send(projectKey)
 			// We don't close the channels, since if it writes into it before the program actually die/quit, it will panic ..
 			break infiniteLoop
 		}
@@ -89,14 +85,18 @@ infiniteLoop:
 }
 
 // execute requests to send stacks and logs to the API and reset the buffers after
-func send(logsRequest, stacksRequest *gorequest.SuperAgent) {
+func send(stklogProjectKey string) {
 	if len(buffer.Stacks) > 0 {
+		stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+			Set("Content-Type", "application/json")
 		execRequest(stacksRequest, buffer.Stacks)
-		buffer.Stacks = []Stack{}
+		buffer.Stacks = nil
 	}
 	if len(buffer.Logs) > 0 {
+		logsRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+			Set("Content-Type", "application/json")
 		execRequest(logsRequest, buffer.Logs)
-		buffer.Logs = []LogMessage{}
+		buffer.Logs = nil
 	}
 }
 
