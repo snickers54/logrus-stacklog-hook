@@ -33,8 +33,7 @@ func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 	}
 	file, line := getCallerIgnoringLogMulti(1)
 	logMessage := &LogMessage{
-		// logrus levels are lower than syslog by 2
-		Level:     int32(entry.Level) + 2,
+		Level:     int32(entry.Level) + 1,
 		Extra:     entry.Data,
 		Message:   string(message),
 		Timestamp: entry.Time.Format(time.RFC3339),
