@@ -31,7 +31,9 @@ type Stack struct {
 // update our internal mapping of GoroutineID -> requestID
 func (self *Stack) SetRequestID(requestID string) *Stack {
 	self.RequestID = requestID
+	mutexMapping.Lock()
 	mapping[getGID()] = requestID
+	mutexMapping.Unlock()
 	return self
 }
 
@@ -76,7 +78,9 @@ func (self *Stack) Attach() (*Stack, error) {
 func CreateStack() *Stack {
 	// we generate a requestID as a uuid4
 	requestID := uuid.NewV4().String()
+	mutexMapping.Lock()
 	mapping[getGID()] = requestID
+	mutexMapping.Unlock()
 	host, err := os.Hostname()
 	if err != nil {
 		host = "localhost"

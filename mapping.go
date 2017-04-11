@@ -3,10 +3,12 @@ package stklog
 import (
 	"bytes"
 	"runtime"
+	"sync"
 )
 
 // in memory table mapping between goroutine id (stack ID) and generated request ID for stklog
 var mapping = map[string]string{}
+var mutexMapping = &sync.Mutex{}
 
 // Source : http://blog.sgmansfield.com/2015/12/goroutine-ids/
 // Thanks to Scott Mansfield
@@ -21,6 +23,8 @@ func getGID() string {
 
 // return current operating requestID (goroutine ID dependent)
 func GetCurrentRequestID() (string, bool) {
+	mutexMapping.Lock()
 	value, ok := mapping[getGID()]
+	mutexMapping.Unlock()
 	return value, ok
 }

@@ -27,7 +27,9 @@ func NewStklogHook(apiKey string) *StklogHook {
 // we normalize the log and send it to a channel to be bufferised and sent later
 func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 	message := bytes.TrimSpace([]byte(entry.Message))
+	mutexMapping.Lock()
 	requestID, ok := mapping[getGID()]
+	mutexMapping.Unlock()
 	if ok == false {
 		return errors.New(STACK_NOT_FOUND)
 	}

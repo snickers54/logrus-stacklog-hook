@@ -3,6 +3,7 @@ package stklog
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/parnurzeal/gorequest"
@@ -13,8 +14,10 @@ import (
 type msgBuffer struct {
 	Stacks []Stack
 	Logs   []LogMessage
+	mutex  sync.Mutex
 }
 
+var mutexBuffer = &sync.Mutex{}
 var chanBuffer = make(chan iMessage)
 var flusher = make(chan bool)
 var running = false
@@ -67,14 +70,18 @@ infiniteLoop:
 		case toSend := <-chanBuffer:
 			switch value := toSend.(type) {
 			case *LogMessage:
+				buffer.mutex.Lock()
 				buffer.Logs = append(buffer.Logs, *toSend.(*LogMessage))
+				buffer.mutex.Unlock()
 			case *Stack:
+				buffer.mutex.Lock()
 				buffer.Stacks = append(buffer.Stacks, *toSend.(*Stack))
+				buffer.mutex.Unlock()
 			default:
 				fmt.Printf("%+v is an invalid iMessage object.\n", value)
 			}
 		case <-ticker.C:
-			send(projectKey)
+			go send(projectKey)
 		case <-flusher:
 			send(projectKey)
 			// We don't close the channels, since if it writes into it before the program actually die/quit, it will panic ..
@@ -86,17 +93,30 @@ infiniteLoop:
 
 // execute requests to send stacks and logs to the API and reset the buffers after
 func send(stklogProjectKey string) {
-	if len(buffer.Stacks) > 0 {
+	// it's quicker to perform a copy of our slices and then set the original to nil and unlock our mutex for next appends
+	// unfortunately in case of flush it's unneeded operations but whatever
+	var stacks []Stack = []Stack{}
+	var logs []LogMessage = []LogMessage{}
+	buffer.mutex.Lock()
+	copy(stacks, buffer.Stacks)
+	buffer.Stacks = nil
+	copy(logs, buffer.Logs)
+	buffer.Logs = nil
+	buffer.mutex.Unlock()
+
+	if length := len(stacks); length > 0 {
 		stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
-		execRequest(stacksRequest, buffer.Stacks)
-		buffer.Stacks = nil
+		for i := 0; i < length; i += min(250, length-i) {
+			execRequest(stacksRequest, stacks[i:min(250+i, length)])
+		}
 	}
-	if len(buffer.Logs) > 0 {
+	if length := len(logs); length > 0 {
 		logsRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
-		execRequest(logsRequest, buffer.Logs)
-		buffer.Logs = nil
+		for i := 0; i < length; i += min(250, length-i) {
+			execRequest(logsRequest, logs[i:min(250+i, length)])
+		}
 	}
 }
 
@@ -110,4 +130,11 @@ func execRequest(request *gorequest.SuperAgent, array interface{}) {
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Couldn't send request to %s\n, errors : %s\n", STKLOG_HOST, errs)
 	}
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
