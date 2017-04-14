@@ -91,19 +91,23 @@ infiniteLoop:
 	flusher <- true
 }
 
+func cloneResetBuffers() ([]Stack, []LogMessage) {
+	buffer.mutex.Lock()
+	stacks := make([]Stack, len(buffer.Stacks))
+	logs := make([]LogMessage, len(buffer.Logs))
+	copy(stacks, buffer.Stacks)
+	copy(logs, buffer.Logs)
+	buffer.Stacks = nil
+	buffer.Logs = nil
+	buffer.mutex.Unlock()
+	return stacks, logs
+}
+
 // execute requests to send stacks and logs to the API and reset the buffers after
 func send(stklogProjectKey string) {
 	// it's quicker to perform a copy of our slices and then set the original to nil and unlock our mutex for next appends
 	// unfortunately in case of flush it's unneeded operations but whatever
-	var stacks []Stack = []Stack{}
-	var logs []LogMessage = []LogMessage{}
-	buffer.mutex.Lock()
-	copy(stacks, buffer.Stacks)
-	buffer.Stacks = nil
-	copy(logs, buffer.Logs)
-	buffer.Logs = nil
-	buffer.mutex.Unlock()
-
+	stacks, logs := cloneResetBuffers()
 	if length := len(stacks); length > 0 {
 		stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
