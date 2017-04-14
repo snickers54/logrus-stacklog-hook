@@ -27,6 +27,7 @@ const (
 	STKLOG_HOST            = "https://api.stklog.io"
 	STKLOG_STACKS_ENDPOINT = "stacks"
 	STKLOG_LOGS_ENDPOINT   = "logs"
+	BATCH_SIZE             = 100
 )
 
 // empty interface, but I prefer defining it
@@ -41,13 +42,6 @@ type LogMessage struct {
 	Timestamp string                 `json:"timestamp"`
 	Line      int                    `json:"line"`
 	File      string                 `json:"file"`
-}
-
-// factory to create stdRequests with common options to both stacks and logs
-func newStdRequest() *gorequest.SuperAgent {
-	return gorequest.New().
-		Timeout(3*time.Second).
-		Retry(2, 1*time.Second, http.StatusInternalServerError, http.StatusBadGateway, http.StatusGatewayTimeout)
 }
 
 // Init pre constructed requests and launch a writerLoop goroutine to bufferise and send logs
@@ -109,17 +103,17 @@ func send(stklogProjectKey string) {
 	// unfortunately in case of flush it's unneeded operations but whatever
 	stacks, logs := cloneResetBuffers()
 	if length := len(stacks); length > 0 {
-		stacksRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+		stacksRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
-		for i := 0; i < length; i += min(250, length-i) {
-			execRequest(stacksRequest, stacks[i:min(250+i, length)])
+		for i := 0; i < length; i += min(BATCH_SIZE, length-i) {
+			execRequest(stacksRequest, stacks[i:min(BATCH_SIZE+i, length)])
 		}
 	}
 	if length := len(logs); length > 0 {
-		logsRequest := newStdRequest().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
+		logsRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
-		for i := 0; i < length; i += min(250, length-i) {
-			execRequest(logsRequest, logs[i:min(250+i, length)])
+		for i := 0; i < length; i += min(BATCH_SIZE, length-i) {
+			execRequest(logsRequest, logs[i:min(BATCH_SIZE+i, length)])
 		}
 	}
 }
@@ -127,6 +121,11 @@ func send(stklogProjectKey string) {
 // wrapper to execute the requests and deal with common errors
 func execRequest(request *gorequest.SuperAgent, array interface{}) {
 	resp, _, errs := request.Send(array).End()
+	fmt.Println(resp, errs)
+	if resp == nil {
+		fmt.Println("An unexpected error happened.", errs)
+		return
+	}
 	if resp.StatusCode == http.StatusUnauthorized {
 		fmt.Println("Stklog project key is invalid.")
 		return
