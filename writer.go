@@ -27,7 +27,8 @@ const (
 	STKLOG_HOST            = "https://api.stklog.io"
 	STKLOG_STACKS_ENDPOINT = "stacks"
 	STKLOG_LOGS_ENDPOINT   = "logs"
-	BATCH_SIZE             = 100
+	BATCH_SIZE             = 50
+	MAX_REQUESTS           = 10
 )
 
 // empty interface, but I prefer defining it
@@ -47,7 +48,7 @@ type LogMessage struct {
 // Init pre constructed requests and launch a writerLoop goroutine to bufferise and send logs
 func start(stklogProjectKey string) {
 	if running == true {
-		fmt.Printf("You already have a running hook.\n")
+		fmt.Printf("[STKLOG] You already have a running hook.\n")
 		return
 	}
 	go writerLoop(stklogProjectKey)
@@ -57,7 +58,7 @@ func start(stklogProjectKey string) {
 // Bufferise logs and stacks
 // Send requests every 5seconds and empty the buffer
 func writerLoop(projectKey string) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 infiniteLoop:
 	for {
 		select {
@@ -72,12 +73,17 @@ infiniteLoop:
 				buffer.Stacks = append(buffer.Stacks, *toSend.(*Stack))
 				buffer.mutex.Unlock()
 			default:
-				fmt.Printf("%+v is an invalid iMessage object.\n", value)
+				fmt.Printf("[STKLOG] %+v is an invalid iMessage object.\n", value)
 			}
 		case <-ticker.C:
 			go send(projectKey)
 		case <-flusher:
-			send(projectKey)
+			count := (max(len(buffer.Stacks), len(buffer.Logs)) / BATCH_SIZE) + 1
+			fmt.Printf("[STKLOG] Flushing stacks/logs from buffer. %d stacks and %d logs.\n", len(buffer.Stacks), len(buffer.Logs))
+			for i := 0; i < count; i++ {
+				fmt.Printf("[STKLOG] %d%%\n", 100*i/count)
+				send(projectKey)
+			}
 			// We don't close the channels, since if it writes into it before the program actually die/quit, it will panic ..
 			break infiniteLoop
 		}
@@ -87,12 +93,22 @@ infiniteLoop:
 
 func cloneResetBuffers() ([]Stack, []LogMessage) {
 	buffer.mutex.Lock()
-	stacks := make([]Stack, len(buffer.Stacks))
-	logs := make([]LogMessage, len(buffer.Logs))
-	copy(stacks, buffer.Stacks)
-	copy(logs, buffer.Logs)
-	buffer.Stacks = nil
-	buffer.Logs = nil
+	maxStacks := min(BATCH_SIZE*MAX_REQUESTS, len(buffer.Stacks))
+	maxLogs := min(BATCH_SIZE*MAX_REQUESTS, len(buffer.Logs))
+	stacks := make([]Stack, maxStacks)
+	logs := make([]LogMessage, maxLogs)
+	copy(stacks, buffer.Stacks[:maxStacks])
+	copy(logs, buffer.Logs[:maxLogs])
+	if maxStacks == len(buffer.Stacks) {
+		buffer.Stacks = nil
+	} else {
+		buffer.Stacks = buffer.Stacks[maxStacks:]
+	}
+	if maxLogs == len(buffer.Logs) {
+		buffer.Logs = nil
+	} else {
+		buffer.Logs = buffer.Logs[maxLogs:]
+	}
 	buffer.mutex.Unlock()
 	return stacks, logs
 }
@@ -105,6 +121,7 @@ func send(stklogProjectKey string) {
 	if length := len(stacks); length > 0 {
 		stacksRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
+		stacksRequest.Transport.DisableKeepAlives = true
 		for i := 0; i < length; i += min(BATCH_SIZE, length-i) {
 			execRequest(stacksRequest, stacks[i:min(BATCH_SIZE+i, length)])
 		}
@@ -112,6 +129,7 @@ func send(stklogProjectKey string) {
 	if length := len(logs); length > 0 {
 		logsRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", stklogProjectKey).
 			Set("Content-Type", "application/json")
+		logsRequest.Transport.DisableKeepAlives = true
 		for i := 0; i < length; i += min(BATCH_SIZE, length-i) {
 			execRequest(logsRequest, logs[i:min(BATCH_SIZE+i, length)])
 		}
@@ -121,22 +139,28 @@ func send(stklogProjectKey string) {
 // wrapper to execute the requests and deal with common errors
 func execRequest(request *gorequest.SuperAgent, array interface{}) {
 	resp, _, errs := request.Send(array).End()
-	fmt.Println(resp, errs)
 	if resp == nil {
-		fmt.Println("An unexpected error happened.", errs)
+		fmt.Println("[STKLOG] An unexpected error happened.", errs)
 		return
 	}
 	if resp.StatusCode == http.StatusUnauthorized {
-		fmt.Println("Stklog project key is invalid.")
+		fmt.Println("[STKLOG] project key is invalid.")
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Couldn't send request to %s\n, errors : %s\n", STKLOG_HOST, errs)
+		fmt.Printf("[STKLOG] Couldn't send request to %s\n, errors : %s\n", STKLOG_HOST, errs)
 	}
 }
 
 func min(x, y int) int {
 	if x < y {
+		return x
+	}
+	return y
+}
+
+func max(x, y int) int {
+	if x > y {
 		return x
 	}
 	return y
