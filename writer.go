@@ -27,8 +27,7 @@ const (
 	STKLOG_HOST            = "https://api.stklog.io"
 	STKLOG_STACKS_ENDPOINT = "stacks"
 	STKLOG_LOGS_ENDPOINT   = "logs"
-	BATCH_SIZE             = 50
-	MAX_REQUESTS           = 10
+	BATCH_SIZE             = 200
 )
 
 // empty interface, but I prefer defining it
@@ -93,22 +92,12 @@ infiniteLoop:
 
 func cloneResetBuffers() ([]Stack, []LogMessage) {
 	buffer.mutex.Lock()
-	maxStacks := min(BATCH_SIZE*MAX_REQUESTS, len(buffer.Stacks))
-	maxLogs := min(BATCH_SIZE*MAX_REQUESTS, len(buffer.Logs))
-	stacks := make([]Stack, maxStacks)
-	logs := make([]LogMessage, maxLogs)
-	copy(stacks, buffer.Stacks[:maxStacks])
-	copy(logs, buffer.Logs[:maxLogs])
-	if maxStacks == len(buffer.Stacks) {
-		buffer.Stacks = nil
-	} else {
-		buffer.Stacks = buffer.Stacks[maxStacks:]
-	}
-	if maxLogs == len(buffer.Logs) {
-		buffer.Logs = nil
-	} else {
-		buffer.Logs = buffer.Logs[maxLogs:]
-	}
+	stacks := make([]Stack, len(buffer.Stacks))
+	logs := make([]LogMessage, len(buffer.Logs))
+	copy(stacks, buffer.Stacks)
+	copy(logs, buffer.Logs)
+	buffer.Stacks = nil
+	buffer.Logs = nil
 	buffer.mutex.Unlock()
 	return stacks, logs
 }
