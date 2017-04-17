@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     // instantiate a "stack" where your logs will be linked to
     stklog.CreateStack().End()
@@ -30,6 +30,40 @@ func main() {
 ```
 
 ***NB: hook.Flush is used to flush the buffer of logs/stacks before quitting, useful if you're not a daemon running forever or to quite properly.***
+### Custom options
+
+You can tweak some internals of this hook, like the size of the batch sent when using http.
+
+
+```go
+package main
+
+import (
+    log "github.com/Sirupsen/logrus"
+    stklog "github.com/stklog/logrus-stklog-hook"
+)
+
+func main() {
+    log.SetOutput(os.Stdout)
+    // logrus level = info
+    log.SetLevel(log.InfoLevel)
+
+    hook := stklog.NewStklogHook(sktlog.Options{
+            "project_key": "<project_key>",
+            "batch_size": 300,
+        }
+    )
+    defer hook.Flush()
+    stklog.CreateStack().End()
+    log.AddHook(hook)
+    log.Info("some logging message")
+}
+```
+| Option | Value |
+|:---:|:---:|
+|project_key|"<project_key>"|
+|transport|http \| tcp (not implemented yet)|
+|batch_size (only http)|default: 200, max: 500, min: 1 (not recommended)|
 ### Custom level of logging for Stklog.io
 
 You can define a level of logging for `Stklog.io` independently from `logrus` itself.
@@ -47,7 +81,7 @@ func main() {
     // logrus level = info
     log.SetLevel(log.InfoLevel)
 
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     stklog.CreateStack().End()
     // stklog level = warn
@@ -129,7 +163,7 @@ func worker(stack *stklog.Stack) {
 }
 
 func main() {
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     stack := stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
@@ -166,7 +200,7 @@ func worker() {
 }
 
 func main() {
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
@@ -192,7 +226,7 @@ func worker(stack *stklog.Stack) {
 }
 
 func main() {
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     stklog.CreateStack().SetName("main").End()
     log.AddHook(hook)
@@ -232,7 +266,7 @@ import (
 )
 
 func main() {
-    hook := stklog.NewStklogHook("<project key>")
+    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     stklog.CreateStack()
         .SetName("test stack")

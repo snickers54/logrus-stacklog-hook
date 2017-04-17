@@ -2,6 +2,8 @@ package stklog
 
 const KEY_PROJECT_KEY = "project_key"
 
+type Options map[string]interface{}
+
 // empty interface, but I prefer defining it
 type iEvents interface{}
 
@@ -14,7 +16,7 @@ type iTransport interface {
 }
 
 type transport struct {
-	options    map[string]interface{}
+	options    Options
 	projectKey string
 }
 

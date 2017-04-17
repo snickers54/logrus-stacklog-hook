@@ -25,7 +25,7 @@ func NewStklogHook(options map[string]interface{}) *StklogHook {
 }
 
 // launch a goroutine to bufferise and send logs
-func start(options map[string]interface{}) {
+func start(options Options) {
 	if running == true {
 		fmt.Printf("[STKLOG] You already have a running hook.\n")
 		return
