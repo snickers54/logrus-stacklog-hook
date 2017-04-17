@@ -3,6 +3,7 @@ package stklog
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"runtime"
 	"strings"
 	"time"
@@ -18,9 +19,34 @@ type StklogHook struct {
 
 // Factory to create a new Hook
 // will initiate a goroutine to bufferise and send logs to stklog.io
-func NewStklogHook(apiKey string) *StklogHook {
-	start(apiKey)
+func NewStklogHook(options map[string]interface{}) *StklogHook {
+	start(options)
 	return &StklogHook{}
+}
+
+// launch a goroutine to bufferise and send logs
+func start(options map[string]interface{}) {
+	if running == true {
+		fmt.Printf("[STKLOG] You already have a running hook.\n")
+		return
+	}
+	var trans iTransport = nil
+	switch options["transport"].(type) {
+	case string:
+		if options["transport"].(string) == "tcp" {
+			fmt.Println("[STKLOG] TCP transport not implemented yet.")
+			break
+		} else if options["transport"].(string) == "http" {
+			trans = &transportHTTP{transport: transport{options: options}}
+		}
+	default:
+		fmt.Println("[STKLOG] Default http transporter initialized.")
+		trans = &transportHTTP{transport: transport{options: options}}
+	}
+	if trans != nil {
+		go loop(trans)
+		running = true
+	}
 }
 
 // Standard method called by logrus when a log is written
@@ -43,7 +69,7 @@ func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 		Line:      line,
 		RequestID: requestID,
 	}
-	chanBuffer <- iMessage(logMessage)
+	chanBuffer <- iEvents(logMessage)
 	return nil
 }
 

@@ -52,7 +52,7 @@ func (self *Stack) SetName(name string) *Stack {
 // End is sending this stack through a channel listened by writerLoop
 func (self *Stack) End() *Stack {
 	self.pushed = true
-	chanBuffer <- iMessage(self)
+	chanBuffer <- iEvents(self)
 	return self
 }
 
