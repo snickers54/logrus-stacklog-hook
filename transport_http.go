@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	KEY_BATCH_SIZE         = "batch_size"
+	KEY_BATCH_SIZE         = "http_batch_size"
 	MAX_BATCH_SIZE         = 500
 	DEFAULT_BATCH_SIZE     = 200
 	STKLOG_HOST            = "https://api.stklog.io"

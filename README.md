@@ -50,7 +50,8 @@ func main() {
 
     hook := stklog.NewStklogHook(sktlog.Options{
             "project_key": "<project_key>",
-            "batch_size": 300,
+            "http_batch_size": 300,
+            "transport": "http"
         }
     )
     defer hook.Flush()
@@ -62,8 +63,8 @@ func main() {
 | Option | Value |
 |:---:|:---:|
 |project_key|"<project_key>"|
-|transport|http \| tcp (not implemented yet)|
-|batch_size (only http)|default: 200, max: 500, min: 1 (not recommended)|
+|transport|http (default) \| tcp (not implemented yet)|
+|http_batch_size|default: 200, max: 500, min: 1 (not recommended)|
 ### Custom level of logging for Stklog.io
 
 You can define a level of logging for `Stklog.io` independently from `logrus` itself.
