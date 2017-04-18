@@ -44,6 +44,7 @@ func start(options Options) {
 		trans = &transportHTTP{transport: transport{options: options}}
 	}
 	if trans != nil {
+		trans.Init()
 		go loop(trans)
 		running = true
 	}

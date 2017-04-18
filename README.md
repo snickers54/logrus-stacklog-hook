@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-    hook := stklog.NewStklogHook(sktlog.Options{"project_key": "<project_key>"})
+    hook := stklog.NewStklogHook(stklog.Options{"project_key": "<project_key>"})
     defer hook.Flush()
     // instantiate a "stack" where your logs will be linked to
     stklog.CreateStack().End()
