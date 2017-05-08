@@ -71,7 +71,7 @@ func (self *transportHTTP) Send() {
 }
 
 func (self *transportHTTP) prepare() *gorequest.SuperAgent {
-	objectRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", self.GetProjectKey()).
+	objectRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("X-Stklog-Project-Key", self.GetProjectKey()).
 		Set("Content-Type", "application/json")
 	objectRequest.Transport.DisableKeepAlives = true
 	return objectRequest
