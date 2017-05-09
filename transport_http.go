@@ -56,21 +56,24 @@ func (self *transportHTTP) Send() {
 	// unfortunately in case of flush it's unneeded operations but whatever
 	stacks, logs := cloneResetBuffers()
 	if length := len(stacks); length > 0 {
-		stacksRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("Stklog-Project-Key", self.GetProjectKey()).
-			Set("Content-Type", "application/json")
-		stacksRequest.Transport.DisableKeepAlives = true
+		stacksRequest := self.prepare(STKLOG_STACKS_ENDPOINT)
 		for i := 0; i < length; i += min(self.batchSize, length-i) {
 			execRequest(stacksRequest, stacks[i:min(self.batchSize+i, length)])
 		}
 	}
 	if length := len(logs); length > 0 {
-		logsRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_LOGS_ENDPOINT)).Set("Stklog-Project-Key", self.GetProjectKey()).
-			Set("Content-Type", "application/json")
-		logsRequest.Transport.DisableKeepAlives = true
+		logsRequest := self.prepare(STKLOG_LOGS_ENDPOINT)
 		for i := 0; i < length; i += min(self.batchSize, length-i) {
 			execRequest(logsRequest, logs[i:min(self.batchSize+i, length)])
 		}
 	}
+}
+
+func (self *transportHTTP) prepare(endpoint string) *gorequest.SuperAgent {
+	objectRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, endpoint)).Set("X-Stklog-Project-Key", self.GetProjectKey()).
+		Set("Content-Type", "application/json")
+	objectRequest.Transport.DisableKeepAlives = true
+	return objectRequest
 }
 
 // wrapper to execute the requests and deal with common errors
