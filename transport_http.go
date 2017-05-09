@@ -56,22 +56,21 @@ func (self *transportHTTP) Send() {
 	// unfortunately in case of flush it's unneeded operations but whatever
 	stacks, logs := cloneResetBuffers()
 	if length := len(stacks); length > 0 {
-
+		stacksRequest := self.prepare(STKLOG_STACKS_ENDPOINT)
 		for i := 0; i < length; i += min(self.batchSize, length-i) {
-			stacksRequest := self.prepare()
 			execRequest(stacksRequest, stacks[i:min(self.batchSize+i, length)])
 		}
 	}
 	if length := len(logs); length > 0 {
-		logsRequest := self.prepare()
+		logsRequest := self.prepare(STKLOG_LOGS_ENDPOINT)
 		for i := 0; i < length; i += min(self.batchSize, length-i) {
 			execRequest(logsRequest, logs[i:min(self.batchSize+i, length)])
 		}
 	}
 }
 
-func (self *transportHTTP) prepare() *gorequest.SuperAgent {
-	objectRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, STKLOG_STACKS_ENDPOINT)).Set("X-Stklog-Project-Key", self.GetProjectKey()).
+func (self *transportHTTP) prepare(endpoint string) *gorequest.SuperAgent {
+	objectRequest := gorequest.New().Post(fmt.Sprintf("%s/%s", STKLOG_HOST, endpoint)).Set("X-Stklog-Project-Key", self.GetProjectKey()).
 		Set("Content-Type", "application/json")
 	objectRequest.Transport.DisableKeepAlives = true
 	return objectRequest
