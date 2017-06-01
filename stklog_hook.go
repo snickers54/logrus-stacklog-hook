@@ -34,8 +34,7 @@ func start(options Options) {
 	switch options["transport"].(type) {
 	case string:
 		if options["transport"].(string) == "tcp" {
-			fmt.Println("[STKLOG] TCP transport not implemented yet.")
-			break
+			trans = &transportTCP{transport: transport{options: options}}
 		} else if options["transport"].(string) == "http" {
 			trans = &transportHTTP{transport: transport{options: options}}
 		}

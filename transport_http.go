@@ -42,8 +42,8 @@ func (self *transportHTTP) GetBatchSize() int {
 }
 
 func (self *transportHTTP) Flush() {
-     	if len(buffer.Logs) == 0 && len(buffer.Stacks) == 0 {
-	   	return
+	if len(buffer.Logs) == 0 && len(buffer.Stacks) == 0 {
+		return
 	}
 	count := (max(len(buffer.Stacks), len(buffer.Logs)) / self.batchSize) + 1
 	fmt.Printf("[STKLOG] Flushing stacks/logs from buffer. %d stacks and %d logs.\n", len(buffer.Stacks), len(buffer.Logs))
