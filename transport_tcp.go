@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/vmihailenco/msgpack"
 )
 
 const (
@@ -62,21 +62,21 @@ func (self *transportTCP) write(msgArray [][]byte, retry bool) {
 func (self *transportTCP) Send() {
 	stacks, logs := cloneResetBuffers()
 	for _, stack := range stacks {
-		bsonContent, err := bson.Marshal(stack)
+		content, err := msgpack.Marshal(stack)
 		if err != nil {
 			fmt.Printf("[STKLOG] %s\n", err)
 			continue
 		}
-		msg := [][]byte{[]byte(self.GetProjectKey()), []byte("stack"), bsonContent}
+		msg := [][]byte{[]byte(self.GetProjectKey()), []byte("stack"), content}
 		self.write(msg, true)
 	}
 	for _, logMsg := range logs {
-		bsonContent, err := bson.Marshal(logMsg)
+		content, err := msgpack.Marshal(logMsg)
 		if err != nil {
 			fmt.Printf("[STKLOG] %s\n", err)
 			continue
 		}
-		msg := [][]byte{[]byte(self.GetProjectKey()), []byte("log"), bsonContent}
+		msg := [][]byte{[]byte(self.GetProjectKey()), []byte("log"), content}
 		self.write(msg, true)
 	}
 }
