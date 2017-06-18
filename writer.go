@@ -21,13 +21,13 @@ var buffer = struct {
 
 // Normalized log adapted for Stklog API
 type LogMessage struct {
-	Level     int32                  `json:"level"`
-	Extra     map[string]interface{} `json:"extra"`
-	Message   string                 `json:"message"`
-	RequestID string                 `json:"request_id"`
-	Timestamp string                 `json:"timestamp"`
-	Line      int                    `json:"line"`
-	File      string                 `json:"file"`
+	Level     int32                  `json:"level" msgpack:"level"`
+	Extra     map[string]interface{} `json:"extra" msgpack:"extra"`
+	Message   string                 `json:"message" msgpack:"message"`
+	RequestID string                 `json:"request_id" msgpack:"request_id"`
+	Timestamp string                 `json:"timestamp" msgpack:"timestamp"`
+	Line      int                    `json:"line" msgpack:"line"`
+	File      string                 `json:"file" msgpack:"file"`
 }
 
 // Bufferise logs and stacks

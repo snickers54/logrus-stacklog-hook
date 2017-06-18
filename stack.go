@@ -16,14 +16,14 @@ const (
 
 // Stack structure representing a logical block of logs
 type Stack struct {
-	ParentRequestID string                 `json:"parent_request_id"`
-	Name            string                 `json:"name"`
-	Extra           map[string]interface{} `json:"extra"`
-	RequestID       string                 `json:"request_id"`
-	Timestamp       string                 `json:"timestamp"`
-	Line            int                    `json:"line"`
-	File            string                 `json:"file"`
-	Hostname        string                 `json:"hostname"`
+	ParentRequestID string                 `json:"parent_request_id" msgpack:"parent_request_id"`
+	Name            string                 `json:"name" msgpack:"name"`
+	Extra           map[string]interface{} `json:"extra" msgpack:"extra"`
+	RequestID       string                 `json:"request_id" msgpack:"request_id"`
+	Timestamp       string                 `json:"timestamp" msgpack:"timestamp"`
+	Line            int                    `json:"line" msgpack:"line"`
+	File            string                 `json:"file" msgpack:"file"`
+	Hostname        string                 `json:"hostname" msgpack:"hostname"`
 	pushed          bool
 }
 
