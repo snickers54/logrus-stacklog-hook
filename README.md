@@ -63,7 +63,7 @@ func main() {
 | Option | Value |
 |:---:|:---:|
 |project_key|"<project_key>"|
-|transport|http (default) \| tcp (not implemented yet)|
+|transport|http \| tcp (default)|
 |http_batch_size|default: 200, max: 500, min: 1 (not recommended)|
 ### Custom level of logging for Stklog.io
 
@@ -284,4 +284,4 @@ func main() {
 ### Technical details
 Specifically for Golang, we had to find a smart way to not ask you on which stack you want to write. We then decided to maintain an internal map[string]string, with key the current goroutine ID and with value the requestID of a stack. We invite you to check the code itself to understand our implementation.
 ### Miscellaneous
-You can call `stklog.GetCurrentRequestID()` to know which requestID is associated to your current thread. It could help for debugging purpose if you do tricky things :)
+You can call `stklog.GetCurrentRequestID()` to know which requestID is associated to your current goroutine. It could help for debugging purpose if you do tricky things :)

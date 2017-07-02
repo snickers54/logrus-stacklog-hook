@@ -39,8 +39,8 @@ func start(options Options) {
 			trans = &transportHTTP{transport: transport{options: options}}
 		}
 	default:
-		fmt.Println("[STKLOG] Default http transporter initialized.")
-		trans = &transportHTTP{transport: transport{options: options}}
+		fmt.Println("[STKLOG] Default tcp transporter initialized.")
+		trans = &transportTCP{transport: transport{options: options}}
 	}
 	if trans != nil {
 		trans.Init()
