@@ -16,21 +16,21 @@ const (
 
 // Stack structure representing a logical block of logs
 type Stack struct {
-	ParentRequestID string                 `json:"parent_request_id" msgpack:"parent_request_id"`
-	Name            string                 `json:"name" msgpack:"name"`
-	Extra           map[string]interface{} `json:"extra" msgpack:"extra"`
-	RequestID       string                 `json:"request_id" msgpack:"request_id"`
-	Timestamp       string                 `json:"timestamp" msgpack:"timestamp"`
-	Line            int                    `json:"line" msgpack:"line"`
-	File            string                 `json:"file" msgpack:"file"`
-	Hostname        string                 `json:"hostname" msgpack:"hostname"`
-	pushed          bool
+	ParentID  string                 `json:"parent_id" msgpack:"parent_id"`
+	Name      string                 `json:"name" msgpack:"name"`
+	Extra     map[string]interface{} `json:"extra" msgpack:"extra"`
+	ID        string                 `json:"id" msgpack:"id"`
+	Timestamp string                 `json:"timestamp" msgpack:"timestamp"`
+	Line      int                    `json:"line" msgpack:"line"`
+	File      string                 `json:"file" msgpack:"file"`
+	Hostname  string                 `json:"hostname" msgpack:"hostname"`
+	pushed    bool
 }
 
 // Let you set a custom requestID (unique identifier used to link stacks and logs)
 // update our internal mapping of GoroutineID -> requestID
 func (self *Stack) SetRequestID(requestID string) *Stack {
-	self.RequestID = requestID
+	self.ID = requestID
 	mutexMapping.Lock()
 	mapping[getGID()] = requestID
 	mutexMapping.Unlock()
@@ -69,7 +69,7 @@ func (self *Stack) Attach() (*Stack, error) {
 		return nil, fmt.Errorf(STACK_NOT_ENDED, file, line)
 	}
 	stack := CreateStack()
-	stack.ParentRequestID = self.RequestID
+	stack.ParentID = self.ID
 	return stack, nil
 }
 
@@ -88,7 +88,7 @@ func CreateStack() *Stack {
 	_, file, line, _ := runtime.Caller(1)
 	return &Stack{
 		pushed:    false,
-		RequestID: requestID,
+		ID:        requestID,
 		Timestamp: time.Now().Format(time.RFC3339),
 		File:      file,
 		Line:      line,

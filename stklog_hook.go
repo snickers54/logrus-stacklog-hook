@@ -67,7 +67,7 @@ func (hook *StklogHook) Fire(entry *logrus.Entry) error {
 		Timestamp: entry.Time.Format(time.RFC3339),
 		File:      file,
 		Line:      line,
-		RequestID: requestID,
+		StackID:   requestID,
 	}
 	chanBuffer <- iEvents(logMessage)
 	return nil

@@ -24,7 +24,7 @@ type LogMessage struct {
 	Level     int32                  `json:"level" msgpack:"level"`
 	Extra     map[string]interface{} `json:"extra" msgpack:"extra"`
 	Message   string                 `json:"message" msgpack:"message"`
-	RequestID string                 `json:"request_id" msgpack:"request_id"`
+	StackID   string                 `json:"stack_id" msgpack:"stack_id"`
 	Timestamp string                 `json:"timestamp" msgpack:"timestamp"`
 	Line      int                    `json:"line" msgpack:"line"`
 	File      string                 `json:"file" msgpack:"file"`

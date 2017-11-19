@@ -3,6 +3,7 @@ package stklog
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net"
 
@@ -21,7 +22,7 @@ type transportTCP struct {
 
 func (self *transportTCP) Init() {
 	self.projectKey = self.GetProjectKey()
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", STKLOG_DOMAIN, STKLOG_TCP_PORT))
+	conn, err := tls.Dial("tcp", fmt.Sprintf("%s:%d", STKLOG_DOMAIN, STKLOG_TCP_PORT), &tls.Config{})
 	if err != nil {
 		fmt.Printf("[STKLOG] Couldn't connect to %s:%d\n with error : %s\n", STKLOG_DOMAIN, STKLOG_TCP_PORT, err)
 		return
